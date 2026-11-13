@@ -3,19 +3,43 @@ import 'package:flutter/material.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/primary_button.dart';
+import '../auth/auth_repository.dart';
 import '../materials/study_material.dart';
 import '../onboarding/widgets/study_material_card.dart';
 
-/// Início: biblioteca de materiais do estudante.
+/// Início: biblioteca de materiais. Os materiais ainda são demonstração.
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.materialsRepository});
+  const HomeScreen({
+    super.key,
+    required this.materialsRepository,
+    required this.authRepository,
+  });
 
   final MaterialsRepository materialsRepository;
+  final AuthRepository authRepository;
 
   void _comingSoon(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    try {
+      await authRepository.signOut();
+    } catch (error) {
+      // O cliente apaga os tokens locais mesmo se a API estiver indisponível.
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sessão local encerrada. Aviso: $error')),
+        );
+      }
+    }
+    if (!context.mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRoutes.getStarted,
+      (_) => false,
+    );
   }
 
   @override
@@ -31,16 +55,13 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Image.asset('assets/images/logo.png',
-                      height: 44, semanticLabel: 'Logo do Estuda'),
+                  Image.asset('assets/images/logo.png', height: 44, semanticLabel: 'Logo do Estuda'),
                   const Spacer(),
                   TextButton(
-                    onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(
-                        AppRoutes.getStarted, (_) => false),
+                    onPressed: () => _logout(context),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.navy,
-                      textStyle: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700),
+                      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                     ),
                     child: const Text('Sair'),
                   ),
@@ -49,32 +70,17 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 12),
               const Text(
                 'Seus materiais',
-                style: TextStyle(
-                  fontSize: 28,
-                  height: 1.2,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.navy,
-                ),
+                style: TextStyle(fontSize: 28, height: 1.2, fontWeight: FontWeight.w700, color: AppColors.navy),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Escolha um material para praticar.',
-                style: TextStyle(fontSize: 16, color: AppColors.bodyText),
-              ),
+              const Text('Escolha um material para praticar.', style: TextStyle(fontSize: 16, color: AppColors.bodyText)),
               if (materialsRepository.isDemo) ...[
                 const SizedBox(height: 14),
                 Container(
                   width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondarySoft,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Modo demonstração: materiais de exemplo.',
-                    style: TextStyle(fontSize: 13, color: AppColors.navy),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(color: AppColors.secondarySoft, borderRadius: BorderRadius.circular(8)),
+                  child: const Text('Modo demonstração: materiais de exemplo.', style: TextStyle(fontSize: 13, color: AppColors.navy)),
                 ),
               ],
               const SizedBox(height: 16),
@@ -83,8 +89,7 @@ class HomeScreen extends StatelessWidget {
                     ? const _EmptyLibrary()
                     : GridView.builder(
                         itemCount: materials.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 3,
                           crossAxisSpacing: 20,
                           mainAxisSpacing: 13,
@@ -102,8 +107,7 @@ class HomeScreen extends StatelessWidget {
                 label: 'Enviar material',
                 backgroundColor: AppColors.primarySoft,
                 foregroundColor: AppColors.navy,
-                onPressed: () => _comingSoon(
-                    context, 'O envio de PDF será a próxima etapa.'),
+                onPressed: () => _comingSoon(context, 'O envio de PDF será a próxima etapa.'),
               ),
               const SizedBox(height: 16),
             ],

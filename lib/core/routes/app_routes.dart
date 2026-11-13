@@ -28,7 +28,6 @@ class AppRouter {
   Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case AppRoutes.getStarted:
-        // Transição suave após a splash.
         return PageRouteBuilder<void>(
           settings: settings,
           transitionDuration: const Duration(milliseconds: 350),
@@ -42,7 +41,12 @@ class AppRouter {
         return _page(settings, SignUpScreen(authRepository: authRepository));
       case AppRoutes.home:
         return _page(
-            settings, HomeScreen(materialsRepository: materialsRepository));
+          settings,
+          HomeScreen(
+            materialsRepository: materialsRepository,
+            authRepository: authRepository,
+          ),
+        );
       case AppRoutes.splash:
       default:
         return _page(settings, const SplashScreen());

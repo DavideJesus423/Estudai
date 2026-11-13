@@ -5,18 +5,13 @@ import '../../core/theme/app_colors.dart';
 import '../../core/validators.dart';
 import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/back_label_button.dart';
-import '../../shared/widgets/demo_mode_button.dart';
 import '../../shared/widgets/primary_button.dart';
 import 'auth_repository.dart';
 
-/// PROPOSTA: esta tela NÃO existe no Figma. Foi montada reutilizando os
-/// mesmos componentes e o layout da tela de login, para o botão
-/// "Começar agora" ter um destino coerente. Substitua quando houver design.
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key, required this.authRepository});
 
   final AuthRepository authRepository;
-
   static const int minPasswordLength = 8;
 
   @override
@@ -24,25 +19,22 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
   bool _loading = false;
 
-  bool get _passwordsMatch =>
-      _passwordController.text == _confirmController.text;
-
-  bool get _canSubmit =>
-      !_loading &&
+  bool get _passwordsMatch => _passwordController.text == _confirmController.text;
+  bool get _canSubmit => !_loading &&
+      _nameController.text.trim().length >= 2 &&
       isValidEmail(_emailController.text) &&
       _passwordController.text.length >= SignUpScreen.minPasswordLength &&
       _passwordsMatch;
 
   String? get _passwordError {
     final text = _passwordController.text;
-    if (text.isEmpty || text.length >= SignUpScreen.minPasswordLength) {
-      return null;
-    }
+    if (text.isEmpty || text.length >= SignUpScreen.minPasswordLength) return null;
     return 'Use pelo menos ${SignUpScreen.minPasswordLength} caracteres.';
   }
 
@@ -53,6 +45,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
@@ -72,14 +65,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => _loading = true);
     try {
       await widget.authRepository.signUpWithEmail(
+        name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      // TODO: ao existir a tela inicial, navegar para ela aqui.
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (_) => false);
     } on AuthNotConfiguredException catch (e) {
       _showMessage(e.message);
-    } catch (_) {
-      _showMessage('Não foi possível concluir. Tente novamente.');
+    } catch (e) {
+      _showMessage(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -103,16 +98,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Criar conta',
-                          style: TextStyle(
-                            fontSize: 28,
-                            height: 1.2,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.navy,
-                          ),
+                        const Text('Criar conta', style: TextStyle(fontSize: 28, height: 1.2, fontWeight: FontWeight.w700, color: AppColors.navy)),
+                        const SizedBox(height: 32),
+                        AppTextField(
+                          label: 'Nome completo',
+                          controller: _nameController,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.name],
+                          onChanged: (_) => setState(() {}),
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 20),
                         AppTextField(
                           label: 'Email',
                           controller: _emailController,
@@ -121,7 +116,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           autofillHints: const [AutofillHints.email],
                           onChanged: (_) => setState(() {}),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
                         AppTextField(
                           label: 'Senha',
                           controller: _passwordController,
@@ -131,7 +126,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           errorText: _passwordError,
                           onChanged: (_) => setState(() {}),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
                         AppTextField(
                           label: 'Confirmar senha',
                           controller: _confirmController,
@@ -143,26 +138,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           onSubmitted: (_) => _submit(),
                         ),
                         const SizedBox(height: 28),
-                        PrimaryButton(
-                          label: 'Criar conta',
-                          onPressed: _canSubmit ? _submit : null,
-                        ),
+                        PrimaryButton(label: 'Criar conta', onPressed: _canSubmit ? _submit : null),
                         const SizedBox(height: 12),
                         Center(
                           child: TextButton(
-                            onPressed: () => Navigator.of(context)
-                                .pushReplacementNamed(AppRoutes.login),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.navy,
-                              textStyle: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                            onPressed: _loading ? null : () => Navigator.of(context).pushReplacementNamed(AppRoutes.login),
+                            style: TextButton.styleFrom(foregroundColor: AppColors.navy, textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                             child: const Text('Já tenho conta'),
                           ),
                         ),
-                        const DemoModeButton(),
                       ],
                     ),
                   ),
