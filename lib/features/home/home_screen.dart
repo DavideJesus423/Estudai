@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/routes/app_routes.dart';
@@ -6,22 +7,62 @@ import '../../shared/widgets/primary_button.dart';
 import '../auth/auth_repository.dart';
 import '../materials/study_material.dart';
 import '../onboarding/widgets/study_material_card.dart';
+import '../questions/configure_questions_screen.dart';
+import '../questions/questions_repository.dart';
 
 /// Início: biblioteca de materiais. Os materiais ainda são demonstração.
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.materialsRepository,
+    required this.questionsRepository,
     required this.authRepository,
   });
 
   final MaterialsRepository materialsRepository;
+  final QuestionsRepository questionsRepository;
   final AuthRepository authRepository;
 
-  void _comingSoon(BuildContext context, String message) {
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  /// Mesmo limite do backend (MAX_PDF_MB).
+  static const _maxPdfBytes = 10 * 1024 * 1024;
+
+  MaterialsRepository get materialsRepository => widget.materialsRepository;
+  AuthRepository get authRepository => widget.authRepository;
+
+  void _message(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _pickPdf() async {
+    final file = await FilePicker.pickFile(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+    );
+    if (file == null) return;
+    try {
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+      if (bytes.length > _maxPdfBytes) {
+        _message('O PDF tem mais de 10 MB. Escolha um arquivo menor.');
+        return;
+      }
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => ConfigureQuestionsScreen(
+          filename: file.name,
+          bytes: bytes,
+          repository: widget.questionsRepository,
+        ),
+      ));
+    } catch (_) {
+      if (mounted) _message('Não foi possível abrir o arquivo.');
+    }
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -107,7 +148,7 @@ class HomeScreen extends StatelessWidget {
                 label: 'Enviar material',
                 backgroundColor: AppColors.primarySoft,
                 foregroundColor: AppColors.navy,
-                onPressed: () => _comingSoon(context, 'O envio de PDF será a próxima etapa.'),
+                onPressed: _pickPdf,
               ),
               const SizedBox(height: 16),
             ],

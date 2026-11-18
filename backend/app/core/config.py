@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     cors_origins: str = ""
     db_pool_size: int = 5
     db_max_overflow: int = 10
+    gemini_api_key: str | None = None
+    ai_model: str = "gemini-2.5-flash"
+    ai_fallback_models: str = ""
+    ai_timeout_seconds: int = 120
+    max_pdf_mb: int = 10
 
     @field_validator("jwt_secret")
     @classmethod

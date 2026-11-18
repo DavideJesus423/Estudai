@@ -167,6 +167,54 @@ class EstudaiApiClient {
     }
   }
 
+  /// Envia um PDF e recebe as questões geradas pela IA (`POST /questions/generate`).
+  /// Se o access token expirou, renova a sessão uma vez e repete o envio.
+  Future<Map<String, dynamic>> generateQuestions({
+    required List<int> pdfBytes,
+    required String filename,
+    int numQuestions = 5,
+    int numOptions = 4,
+  }) async {
+    Future<Map<String, dynamic>> attempt(String access) async {
+      final request = http.MultipartRequest('POST', _uri('/questions/generate'))
+        ..headers['Authorization'] = 'Bearer $access'
+        ..fields['num_questions'] = '$numQuestions'
+        ..fields['num_options'] = '$numOptions'
+        ..files.add(http.MultipartFile.fromBytes('file', pdfBytes, filename: filename));
+      late final http.Response response;
+      try {
+        final streamed = await request.send().timeout(const Duration(seconds: 150));
+        response = await http.Response.fromStream(streamed);
+      } catch (_) {
+        throw const EstudaiApiException(
+          'Não foi possível conectar à API. Verifique se ela está ligada e se o endereço está correto.',
+        );
+      }
+      final data = _decode(response);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw EstudaiApiException(
+          _errorMessage(data, response.statusCode),
+          statusCode: response.statusCode,
+        );
+      }
+      return data;
+    }
+
+    var access = await _storage.read(key: _accessKey);
+    if (access == null) {
+      throw const EstudaiApiException('Nenhuma sessão salva. Entre novamente.');
+    }
+    try {
+      return await attempt(access);
+    } on EstudaiApiException catch (error) {
+      if (error.statusCode != 401) rethrow;
+      await _refresh();
+      access = await _storage.read(key: _accessKey);
+      if (access == null) rethrow;
+      return attempt(access);
+    }
+  }
+
   Future<void> logout() async {
     final refreshToken = await _storage.read(key: _refreshKey);
     try {

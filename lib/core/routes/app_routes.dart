@@ -6,6 +6,7 @@ import '../../features/auth/sign_up_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/materials/study_material.dart';
 import '../../features/onboarding/get_started_screen.dart';
+import '../../features/questions/questions_repository.dart';
 import '../../features/splash/splash_screen.dart';
 
 abstract final class AppRoutes {
@@ -20,10 +21,12 @@ class AppRouter {
   const AppRouter({
     required this.authRepository,
     required this.materialsRepository,
+    required this.questionsRepository,
   });
 
   final AuthRepository authRepository;
   final MaterialsRepository materialsRepository;
+  final QuestionsRepository questionsRepository;
 
   Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -44,6 +47,7 @@ class AppRouter {
           settings,
           HomeScreen(
             materialsRepository: materialsRepository,
+            questionsRepository: questionsRepository,
             authRepository: authRepository,
           ),
         );

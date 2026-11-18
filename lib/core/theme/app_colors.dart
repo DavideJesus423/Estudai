@@ -22,6 +22,13 @@ abstract final class AppColors {
   static const Color bodyText = Color(0xFF1A1A1A);
   static const Color google = Color(0xFF4286F4);
 
+  // Feedback das respostas ao resolver questões (sempre acompanhado de ícone
+  // e texto, nunca só de cor).
+  static const Color success = Color(0xFF1B7A3D);
+  static const Color successSoft = Color(0xFFE2F5E7);
+  static const Color error = Color(0xFFB3261E);
+  static const Color errorSoft = Color(0xFFFDE7E7);
+
   // Cartões de materiais (pastel).
   static const Color cardBlue = Color(0xFFAEC2FF);
   static const Color cardGreen = Color(0xFF8DFF98);

@@ -283,3 +283,25 @@ Esses endereços são apenas para desenvolvimento. Em produção, use domínio c
 8. Faça logout; tente renovar a sessão encerrada: deve retornar `401`.
 
 Antes de publicar, execute testes automatizados, teste concorrência de refresh, teste em ambiente semelhante à produção e faça revisão de segurança.
+
+## Geração de questões (IA)
+
+`POST /api/v1/questions/generate` (exige `Authorization: Bearer ACCESS_TOKEN`), corpo `multipart/form-data`:
+
+- `file`: PDF (até `MAX_PDF_MB`, padrão 10 MB; validado pelo cabeçalho `%PDF-`).
+- `num_questions`: 1 a 20 (padrão 5).
+- `num_options`: 2 a 5 (padrão 4).
+
+Resposta `200`:
+
+```json
+{"questions": [{"statement": "...", "options": ["...", "..."], "correct_index": 1, "explanation": "..."}]}
+```
+
+Erros: `401` sem sessão, `413` PDF grande demais, `415` não é PDF, `422` parâmetros fora do intervalo, `502` falha ou resposta inválida da IA, `503` chave da IA não configurada.
+
+Configuração no `.env`: `GEMINI_API_KEY` (chave do Google AI Studio; só no servidor, nunca no Flutter), `AI_MODEL` (padrão `gemini-2.5-flash`; confira o nome vigente e os limites gratuitos no Google AI Studio), `AI_FALLBACK_MODELS` (modelos reserva, separados por vírgula: se o principal der 503, 404 ou limite, a API tenta de novo e passa ao próximo; erros 503 são repetidos uma vez por modelo), `AI_TIMEOUT_SECONDS`. O PDF é enviado à API do Gemini e a resposta segue um JSON Schema, depois revalidada pelo backend. Nada do conteúdo do PDF vai para o log.
+
+O plano gratuito do Gemini tem limite de requisições por minuto e por dia; ao estourar, a API devolve 502 com a mensagem de limite atingido. A API não tem limite de uso por usuário: configure rate limit no proxy antes de publicar.
+
+Testes: `pytest` (usam um gerador falso, não chamam a IA). A chamada real à IA não foi testada.
